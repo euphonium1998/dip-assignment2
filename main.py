@@ -11,11 +11,29 @@ TOTAL_CATEGORY = 5
 SIZE = 256
 
 
-def embedding(img):
-
+def embeddingHOG(img):
+    img = cv2.resize(img, (SIZE, SIZE))
     hog = cv2.HOGDescriptor()
     descriptors = hog.compute(img, winStride=(16, 16), padding=(0, 0))
     return descriptors
+
+def embeddingHist(img):
+    hist = cv2.calcHist([img], [0, 1, 2], None, [10, 10, 10], [0, 256, 0, 256, 0, 256])
+    return hist.reshape(-1)
+
+def imageEnhancement(img):
+    imgList = []
+    width, height, _ = img.shape
+    img_width_box = int(width * 0.8)
+    img_height_box = int(height * 0.8)
+    for _ in range(10):
+        start_pointX = int(random.uniform(0, width - img_width_box))
+        start_pointY = int(random.uniform(0, height - img_height_box))
+        copyImg = img[start_pointX:start_pointX + img_width_box, start_pointY:start_pointY + img_height_box]
+        imgFlip = cv2.flip(copyImg, 1)
+        imgList.append(copyImg)
+        imgList.append(imgFlip)
+    return imgList
 
 
 def dataLoader():
@@ -28,24 +46,23 @@ def dataLoader():
             for name in files:
                 path = os.path.join(root, name)
                 original = cv2.imread(path, cv2.IMREAD_COLOR)
-                gray = cv2.cvtColor(original, cv2.COLOR_RGB2GRAY)
-                img = cv2.resize(gray, (SIZE, SIZE))
-                feature = embedding(img)
+                # gray = cv2.cvtColor(original, cv2.COLOR_RGB2GRAY)
+                feature = embeddingHOG(original)
+                # feature = embeddingHist(original)
                 node = [feature, categoryIdx]
                 test.append(node)
         for root, dirs, files in os.walk(".\\Dataset\\train\\" + category, topdown=False):
             for name in files:
                 path = os.path.join(root, name)
                 original = cv2.imread(path, cv2.IMREAD_COLOR)
-                gray = cv2.cvtColor(original, cv2.COLOR_RGB2GRAY)
-                img = cv2.resize(gray, (SIZE, SIZE))
-                feature = embedding(img)
-                node = [feature, categoryIdx]
-                train.append(node)
-                # imgFlip = cv2.flip(img, 1)
-                # feature = embedding(imgFlip)
-                # node = [feature, categoryIdx]
-                # train.append(node)
+                imgList = imageEnhancement(original)
+                for img in imgList:
+                    # img = cv2.Canny(original, 128, 200)
+                    # gray = cv2.cvtColor(original, cv2.COLOR_RGB2GRAY)
+                    feature = embeddingHOG(original)
+                    # feature = embeddingHist(original)
+                    node = [feature, categoryIdx]
+                    train.append(node)
         categoryIdx = categoryIdx + 1
     return train, test
 
@@ -70,6 +87,7 @@ if __name__ == '__main__':
     train, test = dataLoader()
     print(len(train[0][0]))
     trainX, trainY, testX, testY = shuffleInput(train, test, len(train[0][0]))
+    print(trainX.shape)
 
     # clf = svm.LinearSVC()
     # clf.fit(trainX, trainY)
@@ -89,8 +107,15 @@ if __name__ == '__main__':
     acc = tot / len(testY)
     print(acc)
 
-    # img = cv2.imread("./Dataset/train/fish/n01443537_428.JPEG", cv2.IMREAD_COLOR)
+    # img = cv2.imread("./Dataset/train/chicken/n01514668_728.JPEG", cv2.IMREAD_COLOR)
+    # cv2.imshow('img', img)
     # print(img.shape)
+    # imgList = imageEnhancement(img)
+    # i = 0
+    # for tmp in imgList:
+    #     cv2.imshow(str(i), tmp)
+    #     # cv2.imwrite(str(i), tmp)
+    #     i = i + 1
     # gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     # print(gray.shape)
     # cv2.imshow('gra', gray)
@@ -99,26 +124,18 @@ if __name__ == '__main__':
     # resize = cv2.resize(img, (SIZE, SIZE))
     # print(resize.shape)
     # cv2.imshow('resize', resize)
-    # sift = cv2.SIFT_create()
-    # keypoints, descriptor = sift.detectAndCompute(gray, None)
-    # descriptor = StandardScaler().fit_transform(descriptor)
-    # print(descriptor.shape)
-    # pca = PCA(n_components=100)
-    # pca.fit(descriptor)
-    # # print(pca.singular_values_)  # 查看特征值
-    # print(pca.singular_values_.shape)
-    # # print(pca.components_)  # 打印查看特征值对应的特征向量
-    # print(pca.components_.shape)
-
-    # cv2.drawKeypoints(image=img,
-    #                   outImage=img,
-    #                   keypoints=keypoints,
-    #                   flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
-    #                   color=(255, 0, 255))
-    # cv2.imshow("SIFT", img)
-    # hog = cv2.HOGDescriptor()
-    # descriptors = hog.compute(resize, winStride=(16, 16), padding=(0, 0))
-    # print(descriptors.shape)
     #
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    # # cv2.drawKeypoints(image=img,
+    # #                   outImage=img,
+    # #                   keypoints=keypoints,
+    # #                   flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+    # #                   color=(255, 0, 255))
+    # # cv2.imshow("SIFT", img)
+    # hog = cv2.HOGDescriptor()
+    # descriptors = hog.compute(resize, winStride=(8, 8), padding=(0, 0))
+    # print(descriptors.shape)
+    # hist = cv2.calcHist(img, [2], None,  [1000], [0, 256])
+    # print(hist.shape)
+    #
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
